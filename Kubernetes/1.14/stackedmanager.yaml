@@ -3,110 +3,61 @@ deployments:
   - command: kubeadm reset -f
     commandSudo: root
     name: Reset Kubernetes
-    timeout: 0
     type: command
   - command: dpkg -r kubeadm kubelet kubectl cri-tools kubernetes-cni
     commandSudo: root
     name: Remove packages
-    timeout: 0
     type: command
   - command: rm -rf /opt/cni/bin
     commandSudo: root
     name: Remove any remaining cni directories 
-    timeout: 0
     type: command
   hosts:
   - 192.168.1.101
   name: Reset any Kubernetes configuration (and remove packages)
-  parallel: true
-  parallelSessions: 0
+  parallel: false
 - actions:
   - destination: /tmp/ubuntu.tar.gz
     name: Upload Ubuntu Packages
     source: ./ubuntu.tar.gz
-    timeout: 0
     type: upload
   - command: tar -C /tmp -xvzf /tmp/ubuntu.tar.gz
     name: Extract Ubuntu packages
-    timeout: 0
     type: command
   - command: dpkg -i /tmp/ubuntu/*
     commandSudo: root
     name: Install Ubuntu packages
-    timeout: 0
     type: command
   - destination: /tmp/docker.tar.gz
     name: Upload Docker Packages
     source: ./docker.tar.gz
-    timeout: 0
     type: upload
   - command: tar -C /tmp -xvzf /tmp/docker.tar.gz
     name: Extract Docker packages
-    timeout: 0
     type: command
   - command: dpkg -i /tmp/docker/*
     commandSudo: root
     name: Install Docker packages
-    timeout: 0
     type: command
   - destination: /tmp/kubernetes.tar.gz
     name: Upload Kubernetes Packages
     source: ./kubernetes.tar.gz
-    timeout: 0
     type: upload
   - command: tar -C /tmp -xvzf /tmp/kubernetes.tar.gz
     name: Extract Kubernetes packages
-    timeout: 0
     type: command
   - command: dpkg -i /tmp/kubernetes/*
     commandSudo: root
     name: Install Kubernetes packages
-    timeout: 0
     type: command
   - command: rm -rf /tmp/kubernetes /tmp/docker /tmp/ubuntu
     commandSudo: root
     name: Tidy installation directories
-    timeout: 0
     type: command
   hosts:
   - 192.168.1.101
   name: Configure host OS for kubernetes nodes
-  parallel: true
-  parallelSessions: 0
-- actions:
-  - name: Push kubernetes images for workers
-    plugin:
-      imageName:
-      - k8s.gcr.io/pause:3.1
-      - k8s.gcr.io/coredns:1.2.2
-      - k8s.gcr.io/kube-proxy:v1.12.3
-      localSudo: true
-      remoteSudo: true
-    timeout: 0
-    type: docker/image
-  - name: Push kubernetes images for managers
-    plugin:
-      imageName:
-      - k8s.gcr.io/kube-apiserver:v1.12.3
-      - k8s.gcr.io/kube-controller-manager:v1.12.3
-      - k8s.gcr.io/kube-scheduler:v1.12.3
-      localSudo: true
-      remoteSudo: true
-    timeout: 0
-    type: docker/image
-  - name: Push etcd image
-    plugin:
-      imageName:
-      -  k8s.gcr.io/etcd:3.2.24
-      localSudo: true
-      remoteSudo: true
-    timeout: 0
-    type: docker/image
-  hosts:
-  - 192.168.1.101
-  name: Deploy Kubernetes Images for 1.12.3
   parallel: false
-  parallelSessions: 0
 - actions:
   - name: Push kubernetes images for workers
     plugin:
@@ -116,7 +67,6 @@ deployments:
       - k8s.gcr.io/kube-proxy:v1.14.0
       localSudo: true
       remoteSudo: true
-    timeout: 0
     type: docker/image
   - name: Push kubernetes images for managers
     plugin:
@@ -126,7 +76,6 @@ deployments:
       - k8s.gcr.io/kube-scheduler:v1.14.0
       localSudo: true
       remoteSudo: true
-    timeout: 0
     type: docker/image
   - name: Push etcd image
     plugin:
@@ -134,13 +83,11 @@ deployments:
       -  k8s.gcr.io/etcd:3.3.10
       localSudo: true
       remoteSudo: true
-    timeout: 0
     type: docker/image
   hosts:
   - 192.168.1.101
   name: Deploy Kubernetes Images for 1.14.0
   parallel: false
-  parallelSessions: 0
 - actions:
   - name: Push calico images for workers
     plugin:
@@ -149,7 +96,6 @@ deployments:
       - calico/cni:v3.5.1
       localSudo: true
       remoteSudo: true
-    timeout: 0
     type: docker/image
   - name: Push calico kube-controllers image
     plugin:
@@ -157,7 +103,6 @@ deployments:
       - calico/kube-controllers:v3.5.1
       localSudo: true
       remoteSudo: true
-    timeout: 0
     type: docker/image
   - name: Push calico etcd image
     plugin:
@@ -165,20 +110,16 @@ deployments:
       - quay.io/coreos/etcd:v3.3.9
       localSudo: true
       remoteSudo: true
-    timeout: 0
     type: docker/image
   - command: kubectl apply -f -
     commandPipeCmd: curl https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/etcd.yaml
     name: Import Calico etcd manifset
-    timeout: 0
     type: command
   - command: kubectl apply -f -
     commandPipeCmd: curl https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/calico.yaml
     name: Import Calico manifset
-    timeout: 0
     type: command
   hosts:
   - 192.168.1.101
   name: Deploy Calico
   parallel: false
-  parallelSessions: 0
