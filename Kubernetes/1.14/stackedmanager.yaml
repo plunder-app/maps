@@ -89,37 +89,39 @@ deployments:
   name: Deploy Kubernetes Images for 1.14.0
   parallel: false
 - actions:
+  - command: kubeadm init --kubernetes-version "v1.14.0" --pod-network-cidr=172.16.0.0/16
+    commandSudo: root
+    name: Initialise Cluster
+    type: command
+  - command: rm -rf ~/.kube ; mkdir -p ~/.kube ; sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config ; sudo chown $(id -u):$(id -g) $HOME/.kube/config
+    name: Allow access to control plane
+    type: command
+    commandSudo: root
+  hosts:
+  - 192.168.1.101
+  name: Initialise Kubernetes Master (1.14)
+  parallel: false
+- actions:
   - name: Push calico images for workers
     plugin:
       imageName:
-      - calico/node:v3.5.1
-      - calico/cni:v3.5.1
+      - calico/node:v3.6.1
+      - calico/cni:v3.6.1
       localSudo: true
       remoteSudo: true
     type: docker/image
   - name: Push calico kube-controllers image
     plugin:
       imageName:
-      - calico/kube-controllers:v3.5.1
-      localSudo: true
-      remoteSudo: true
-    type: docker/image
-  - name: Push calico etcd image
-    plugin:
-      imageName:
-      - quay.io/coreos/etcd:v3.3.9
+      - calico/kube-controllers:v3.6.1
       localSudo: true
       remoteSudo: true
     type: docker/image
   - command: kubectl apply -f -
-    commandPipeCmd: curl https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/etcd.yaml
-    name: Import Calico etcd manifset
-    type: command
-  - command: kubectl apply -f -
-    commandPipeCmd: curl https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/calico.yaml
+    commandPipeCmd: curl https://docs.projectcalico.org/v3.6/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml | sed "s?192.168.0.0/16?172.16.0.0/16?g"
     name: Import Calico manifset
     type: command
   hosts:
   - 192.168.1.101
-  name: Deploy Calico
+  name: Deploy Calico (3.6)
   parallel: false
