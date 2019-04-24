@@ -46,7 +46,7 @@ To disable swap, it can be commented out in the `/etc/fstab` (this requires a re
 
 ## Retrieve the Essentials PKS bundle
 
-The bundle is available from (my.vmware.com)[https://my.vmware.com/web/vmware/details?productId=884&downloadGroup=EPKS_1.14], although a vmware subscription is required. 
+The bundle is available from [my.vmware.com](https://my.vmware.com/web/vmware/details?productId=884&downloadGroup=EPKS_1.14), although a vmware subscription is required. 
 
 **Note** If you download the bundle on a macOS machine then it will partially try to decompress the binary `.tar.gz` -> `.tar`. To fix this run the command `gzip <VMware tarball>` to fix this. 
 
@@ -54,7 +54,7 @@ The bundle is available from (my.vmware.com)[https://my.vmware.com/web/vmware/de
 
 The simplest way of modifying the deployment map is retrieve the raw deployment map or clone the repository as a whole.
 
-## Update the map to point to your Ubuntu host
+## Update the map to point to your Ubuntu host
 
 The example map uses an example address (typically from VMware Fusion), to modify this use the following steps:
 
