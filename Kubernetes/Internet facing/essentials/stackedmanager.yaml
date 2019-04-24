@@ -1,0 +1,100 @@
+deployments:
+- actions:
+  - command: kubeadm reset -f
+    commandSudo: root
+    name: Reset Kubernetes
+    type: command
+    ignoreFail: true
+  - command: dpkg -r kubeadm kubelet kubectl cri-tools kubernetes-cni
+    commandSudo: root
+    name: Remove packages
+    type: command
+    ignoreFail: true
+  - command: rm -rf /opt/cni/bin
+    commandSudo: root
+    name: Remove any remaining cni directories 
+    type: command
+    ignoreFail: true
+  hosts:
+  - 172.16.72.131
+  name: Reset any Kubernetes configuration (and remove packages)
+  parallel: false
+- actions:
+  - command: "tee /etc/apt/sources.list.d/docker.list"
+    commandPipeCmd: echo "deb https://download.docker.com/linux/ubuntu xenial stable"
+    name: Set Docker Repository
+    type: command
+    commandSudo: root
+  - command: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - 
+    name: Add Docker repository key
+    type: command
+    commandSudo: root 
+  - command: sudo apt-get update
+    name: Update repositories (failures are ignored)
+    type: command
+    ignoreFail: true
+    commandSudo: root 
+  - destination: /tmp/essentials.tar.gz
+    name: Upload Essentials PKS
+    source: /Users/dan/Downloads/vmware-kubernetes-v1.13.5+vmware.1.tar.gz
+    type: upload
+  - command: tar -C /tmp -xvzf /tmp/essentials.tar.gz
+    name: Extract Essentials packages
+    type: command
+  - command: apt-get install -y ethtool socat ebtables conntrack libnetfilter-conntrack3
+    commandSudo: root
+    name: Install Ubuntu packages
+    type: command
+  - command: apt-get install -y docker-ce=18.06.1~ce~3-0~ubuntu
+    commandSudo: root
+    name: Install Docker 18.06
+    type: command
+  - command: dpkg -i /tmp/vmware-kubernetes-*/debs/*
+    commandSudo: root
+    name: Install Kubernetes packages
+    type: command
+  - command: systemctl enable kubelet.service
+    commandSudo: root
+    name: Enable Kubelet Service
+    type: command
+  - command: find /tmp/vmware-kubernetes-*/kubernetes*/images/*.tar.gz | while read image; do sudo docker load -i $image; done
+    name: Import Essential PKS Manager Images
+    type: command
+    commandSudo: root
+  - command: find /tmp/vmware-kubernetes-*/etcd*/images/*.tar.gz | while read image; do sudo docker load -i $image; done
+    name: Import Essential PKS Etcd
+    type: command
+    commandSudo: root
+  - command: find /tmp/vmware-kubernetes-*/coredns*/images/*.tar.gz | while read image; do sudo docker load -i $image; done
+    name: Import Essential PKS CoreDNS
+    type: command
+    commandSudo: root
+  - command: sudo docker tag vmware/coredns:v1.2.6_vmware.1 vmware/coredns:1.2.6; sudo docker tag vmware/etcd:v3.2.24_vmware.1 vmware/etcd:3.2.24
+    name: Fix tagging on CoreDNS and etcd
+    type: command
+  hosts:
+  - 172.16.72.131
+  name: Configure host OS for kubernetes nodes
+  parallel: false
+- actions:
+  - command: kubeadm init --kubernetes-version "v1.13.5+vmware.1" --image-repository=vmware --pod-network-cidr=172.16.0.0/16
+    commandSudo: root
+    name: Initialise Cluster
+    type: command
+  - command: rm -rf ~/.kube ; mkdir -p ~/.kube ; sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config ; sudo chown $(id -u):$(id -g) $HOME/.kube/config
+    name: Allow access to control plane
+    type: command
+    commandSudo: root
+  hosts:
+  - 172.16.72.131
+  name: Initialise Kubernetes Master
+  parallel: false
+- actions:
+  - command: kubectl apply -f -
+    commandPipeCmd: curl https://docs.projectcalico.org/v3.6/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml | sed "s?192.168.0.0/16?172.16.0.0/16?g"
+    name: Import Calico manifest
+    type: command
+  hosts:
+  - 172.16.72.131
+  name: Deploy Calico (3.6)
+  parallel: false
