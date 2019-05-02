@@ -1,0 +1,97 @@
+deployments:
+- actions:
+  - command: kubeadm reset -f
+    commandSudo: root
+    name: Reset Kubernetes
+    type: command
+    ignoreFail: true
+  - command: dpkg -r kubeadm kubelet kubectl cri-tools kubernetes-cni
+    commandSudo: root
+    name: Remove packages
+    type: command
+    ignoreFail: true
+  - command: rm -rf /opt/cni/bin
+    commandSudo: root
+    name: Remove any remaining cni directories 
+    type: command
+    ignoreFail: true
+  hosts:
+  - 172.16.72.131
+  name: Reset any Kubernetes configuration (and remove packages)
+  parallel: false
+- actions:
+  - command: "tee /etc/apt/sources.list"
+    commandPipeCmd: echo -e "deb http://uk.archive.ubuntu.com/ubuntu/ bionic main restricted universe multiverse"
+    name: Reset Ubuntu Repository
+    type: command
+    commandSudo: root
+  - command: sudo apt-get update
+    name: Update Ubuntu repositories (failures are ignored)
+    type: command
+    ignoreFail: true
+    commandSudo: root 
+  - command: apt-get install curl apt-transport-https gnupg-agent ca-certificates software-properties-common -y
+    name: Install Curl / apt-https (Required for updating repostiory)
+    type: command
+    commandSudo: root
+  - command: "tee /etc/apt/sources.list.d/docker.list"
+    commandPipeCmd: echo "deb https://download.docker.com/linux/ubuntu xenial stable"
+    name: Set Docker Repository
+    type: command
+    commandSudo: root
+  - command: "tee /etc/apt/sources.list.d/kubernetes.list"
+    commandPipeCmd: echo "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+    name: Set Kubernetes Repository
+    type: command
+    commandSudo: root
+  - command: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - 
+    name: Add Docker repository key
+    type: command
+    commandSudo: root
+  - command: curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -  
+    name: Add kubernetes repository key
+    type: command
+    commandSudo: root 
+  - command: sudo apt-get update
+    name: Update Docker / Kubernetes repositories (failures are ignored)
+    type: command
+    ignoreFail: true
+    commandSudo: root 
+  - command: apt-get install -y ethtool socat ebtables conntrack libnetfilter-conntrack3
+    commandSudo: root
+    name: Install Ubuntu packages
+    type: command
+  - command: apt-get install -y docker-ce=18.06.1~ce~3-0~ubuntu kubelet=1.14.1-00 kubeadm=1.14.1-00 kubectl=1.14.1-00 kubernetes-cni cri-tools
+    commandSudo: root
+    name: Install Docker 18.06 and Kubernetes 1.14.1
+    type: command
+  - command: systemctl enable kubelet.service
+    commandSudo: root
+    name: Enable Kubelet Service
+    type: command
+  hosts:
+  - 172.16.72.131
+  name: Configure host OS for kubernetes nodes
+  parallel: false
+- actions:
+  - command: kubeadm init --kubernetes-version "v1.14.1" --pod-network-cidr=172.16.0.0/16
+    commandSudo: root
+    name: Initialise Cluster
+    type: command
+  - command: rm -rf ~/.kube ; mkdir -p ~/.kube ; sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config ; sudo chown $(id -u):$(id -g) $HOME/.kube/config
+    name: Allow access to control plane
+    type: command
+    commandSudo: root
+  hosts:
+  - 172.16.72.131
+  name: Initialise Kubernetes Master
+  parallel: false
+- actions:
+  - command: kubectl apply -f -
+    commandPipeCmd: curl https://docs.projectcalico.org/v3.6/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml | sed "s?192.168.0.0/16?172.16.0.0/16?g"
+    name: Import Calico manifest
+    type: command
+  hosts:
+  - 172.16.72.131
+  name: Deploy Calico (3.6)
+  parallel: false
