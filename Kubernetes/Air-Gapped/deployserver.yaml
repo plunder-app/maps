@@ -15,10 +15,11 @@ deployments:
     name: Set Ubuntu Repository
     type: command
     commandSudo: root
-  - command: sudo apt-get update || true
+  - command: sudo apt-get update
     name: Update repositories (failures are ignored)
     type: command
-    commandSudo: root 
+    commandSudo: root
+    ignoreFail: true
   hosts:
   - 192.168.1.100
   name: Configure Repositories
