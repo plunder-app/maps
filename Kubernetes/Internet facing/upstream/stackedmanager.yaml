@@ -20,6 +20,20 @@ deployments:
   name: Reset any Kubernetes configuration (and remove packages)
   parallel: false
 - actions:
+  - command: "tee /etc/apt/sources.list"
+    commandPipeCmd: echo -e "deb http://uk.archive.ubuntu.com/ubuntu/ bionic main restricted universe multiverse"
+    name: Reset Ubuntu Repository
+    type: command
+    commandSudo: root
+  - command: sudo apt-get update
+    name: Update Ubuntu repositories (failures are ignored)
+    type: command
+    ignoreFail: true
+    commandSudo: root 
+  - command: apt-get install curl apt-transport-https gnupg-agent ca-certificates software-properties-common -y
+    name: Install Curl / apt-https (Required for updating repostiory)
+    type: command
+    commandSudo: root
   - command: "tee /etc/apt/sources.list.d/docker.list"
     commandPipeCmd: echo "deb https://download.docker.com/linux/ubuntu xenial stable"
     name: Set Docker Repository
@@ -39,7 +53,7 @@ deployments:
     type: command
     commandSudo: root 
   - command: sudo apt-get update
-    name: Update repositories (failures are ignored)
+    name: Update Docker / Kubernetes repositories (failures are ignored)
     type: command
     ignoreFail: true
     commandSudo: root 
@@ -47,7 +61,7 @@ deployments:
     commandSudo: root
     name: Install Ubuntu packages
     type: command
-  - command: apt-get install -y docker-ce=18.06.1~ce~3-0~ubuntu kubelet=1.14.1 kubeadm=1.14.1 kubectl=1.14.1 kubernetes-cni cri-tools
+  - command: apt-get install -y docker-ce=18.06.1~ce~3-0~ubuntu kubelet=1.14.1-00 kubeadm=1.14.1-00 kubectl=1.14.1-00 kubernetes-cni cri-tools
     commandSudo: root
     name: Install Docker 18.06 and Kubernetes 1.14.1
     type: command
